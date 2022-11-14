@@ -66,9 +66,9 @@ class Database:
         # Expressão que dá match com as entradas do tipo DEFAULT
         exp_default = re.compile(r'(?P<macro>[^\s]+)\sDEFAULT\s(?P<valor>[^\s]+)')
         # Expressão que dá match com as entradas do tipo CNAME
-        exp_cname = re.compile(r'(?P<alias>[^\s]+)\CNAME\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)')
+        exp_cname = re.compile(r'(?P<alias>[^\s]+)\sCNAME\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)')
         # Expressão que dá match com as entradas do tipo SOASP||SOAADMIN||SOASERIAL||SOAREFRESH||SOARETRY||SOAEXPIRE
-        exp_soa = re.compile('r(?P<parametro>[^\s]+)\SOASP||SOAADMIN||SOASERIAL||SOAREFRESH||SOARETRY||SOAEXPIRE\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)')
+        exp_soa = re.compile('r(?P<parametro>[^\s]+)\s(?P<tipo>SOASP||SOAADMIN||SOASERIAL||SOAREFRESH||SOARETRY||SOAEXPIRE)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)')
 
 
         exp_priority = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)\s(?P<prioridade>[^\s]+)$')
@@ -77,9 +77,9 @@ class Database:
 
         exp_value = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)$')
 
-
-        exp = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||MX)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)\s(?P<prioridade>[^\s]+)?')
-
+        self.ns = []
+        self.a = []
+        self.mx = []
         macros = []
         alias = []
         for line in fp:
@@ -91,22 +91,57 @@ class Database:
                 # Percorre os alias estabelecidos e faz a substituição, parte-se do princípio
                 # que os alias são definidos no inicio de ficheiro
                 for macro in macros:
-                    line = re.sub(aliasVals[0],aliasVals[1],line)
+                    line = re.sub(macro[0],macro[1],line)
 
                 res_soa = exp_soa.match(line)
                 res_priority = exp_priority.match(line)
-                res_ttl = exp_ttl,match(line)
+                res_ttl = exp_ttl.match(line)
+                res_value = exp_value.match(line)
                 if res_soa:
-                    if res_soa.group("valor") == "SOASP":
+                    if res_soa.group("tipo") == "SOASP":
                         self.soasp = {"name" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
-                    elif res_soa.group("valor") == "SOAADMIN":
-                        re.sub("\\.","@",res_soa)
+                    elif res_soa.group("tipo") == "SOAADMIN":
+                        re.sub("\.","@",res_soa)
                         self.soaadmin = {"adress" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
-                    elif res_soa.group("valor") == "SOASERIAL":
+                    elif res_soa.group("tipo") == "SOASERIAL":
                         self.soaserial = {"serial" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
-                    elif res_soa.group("valor") == "SOAREFRESH":
+                    elif res_soa.group("tipo") == "SOAREFRESH":
                         self.soarefresh = {"time" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
-                    elif res_soa.group("valor") == "SOARETRY":
+                    elif res_soa.group("tipo") == "SOARETRY":
                         self.soaretry = {"time" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
-                    elif res_soa.group("valor") == "SOAEXPIRE":
+                    elif res_soa.group("tipo") == "SOAEXPIRE":
                         self.soaexpire = {"time" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
+                elif res_priority:
+                    entry = {"name" : res_priority.group("valor"),"ttl" : res_priority.group("tempo"),"prio" :res_priority.group("prioridade") }
+                    if res_priority.group("tipo") == "NS":
+                        self.ns.append(entry)
+                    elif res_priority.group("tipo") == "A":
+                        self.a.append(entry)
+                    elif res_priority.group("tipo") == "MX":
+                        self.mx.append(entry)
+                    else:
+                        # Fazer report de incoerências ou erros
+                        pass
+
+                elif res_ttl:
+                    entry = {"name" : res_ttl.group("valor"),"ttl" : res_ttl.group("tempo")}
+                    if res_ttl.group("tipo") == "NS":
+                        self.ns.append(entry)
+                    elif res_ttl.group("tipo") == "A":
+                        self.a.append(entry)
+                    elif res_ttl.group("tipo") == "MX":
+                        self.mx.append(entry)
+                    else:
+                        # Fazer report de incoerências ou erros
+                        pass
+                elif res_value:
+                    entry = {"name" : res_value.group("valor")}
+                    if res_value.group("tipo") == "NS":
+                        self.ns.append(entry)
+                    elif res_value.group("tipo") == "A":
+                        self.a.append(entry)
+                    elif res_value.group("tipo") == "MX":
+                        self.mx.append(entry)
+                    else:
+                        # Fazer report de incoerências ou erros
+                        pass

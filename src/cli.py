@@ -1,5 +1,5 @@
 import socket
-from DnsPAcket import *
+from DnsPacket import *
 import random
 # Static
 server_ip = 5555
@@ -12,12 +12,16 @@ serverAddressPort   = (server_adress, server_ip)
 # Create a UDP socket at client side
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
-packet = DnsPAcket()
-query_info ="example.com.;MX"
-msg = packet.str(str(random.randint(0,65535)),"Q","0","0","0","0",query_info,"0","0","0")
+id = random.randint(0,65535)
+
+packet = DnsConcisoPacket()
+packet.request(id,"Q","example.com.","MX")
+
+msg = packet.str()
+print(msg)
 
 
 # Send to server using created UDP socket
-UDPClientSocket.sendto(msg.encode(), serverAddressPort)
+UDPClientSocket.sendto(msg.encode(),serverAddressPort)
 
 msgFromServer = UDPClientSocket.recvfrom(bufferSize)

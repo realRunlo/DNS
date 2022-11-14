@@ -2,9 +2,16 @@ import socket
 from threading import Thread
 import sys
 from parsers import *
+from DnsPacket import *
 
-def query_handler(adress,massage):
-    pass
+def query_handler(adress,message):
+    recv_packet = DnsConcisoPacket()
+    print(message)
+    recv_packet.fromStr(message.decode())
+
+    print(recv_packet.name)
+    print(recv_packet.value_type)
+
 
 
 if __name__ == '__main__':
@@ -16,7 +23,7 @@ if __name__ == '__main__':
     # Leitura do ficheiro com a lista dos servidores de topo
     sdts = SdtServers.parse_from_file(args[1])
     #Leitura com ficheiro de base de dados
-    db = Database().parse_from_file(args[2])
+    db = Database.parse_from_file(args[2])
 
     bufferSize = 1024
     # Create a datagram socket
