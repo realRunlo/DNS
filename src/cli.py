@@ -18,6 +18,7 @@ packet = DnsConcisoPacket()
 packet.request(id,"Q","example.com.","MX")
 
 msg = packet.str()
+print("Query enviada do cliente")
 print(msg)
 
 
@@ -25,3 +26,6 @@ print(msg)
 UDPClientSocket.sendto(msg.encode(),serverAddressPort)
 
 msgFromServer = UDPClientSocket.recvfrom(bufferSize)
+
+print("Resposta do SP")
+print(msgFromServer[0].decode())
