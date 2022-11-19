@@ -32,6 +32,11 @@ class DnsConcisoPacket:
 
     def str(self):
         string = str(self.message_id)+","+self.flags+","+str(self.response_code)+","+str(self.n_values)+","+str(self.n_auth)+","+str(self.n_extras)+";"+self.name+","+self.value_type+";"+self.response_vals+";"+self.auth_vals+";"+self.extra_vals+";"
+        flags = self.flags.split('+')
+        for flag in flags:
+            if flag=='Q': # If is query
+                string = str(self.message_id)+","+self.flags+","+str(self.response_code)+","+str(self.n_values)+","+str(self.n_auth)+","+str(self.n_extras)+";"+self.name+","+self.value_type+";"
+
         return string
 
     def fromStr(self,string):
@@ -48,10 +53,20 @@ class DnsConcisoPacket:
         # Query info fields
         self.name = query_fileds[0]
         self.value_type = query_fileds[1]
-        # Data flieds
-        self.response_vals = fields[2]
-        self.auth_vals = fields[3]
-        self.extra_vals = fields[4]
+
+        is_query = False
+        flags = header_fileds[1].split('+')
+        for flag in flags:
+            if flag=='Q': # If is query
+                is_query = True
+                
+        if not is_query:
+            # Data flieds
+            self.response_vals = fields[2]
+            self.auth_vals = fields[3]
+            self.extra_vals = fields[4]
+
+
 
 
     # Query request

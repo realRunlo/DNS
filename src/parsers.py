@@ -2,16 +2,16 @@ import re
 
 # Classe dos dados de configuração
 class Configuration:
-    def __init__(self):
-        pass
 
-    @classmethod
-    def parse_from_file(self,filename):
-        fp = open(filename,"r")
-        exp = re.compile(r'(?P<parametro>[\w.]+)\s(?P<tipo>DB||SP||SS||DD||ST||LG)\s(?P<associado>[\w.\/\-:]+)')
+    def __init__(self):
         self.db = []
         self.sp = []
         self.ss = []
+
+    def parse_from_file(self,filename):
+        fp = open(filename,"r")
+        exp = re.compile(r'(?P<parametro>[\w.]+)\s(?P<tipo>DB||SP||SS||DD||ST||LG)\s(?P<associado>[\w.\/\-:]+)')
+
         for line in fp:
             res = exp.match(line)
             if res:
@@ -37,13 +37,12 @@ class Configuration:
 # Classe com a lista de servidores de topo
 class SdtServers():
     def __init__(self):
-        pass
+        self.table = []
 
-    @classmethod
     def parse_from_file(self,filename):
         fp = open(filename,"r")
         exp = re.compile(r'^(?P<ip>(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])):(?P<port>[0-9]+)$')
-        self.table = []
+
         for line in fp:
             res = exp.match(line)
             if res:
@@ -58,10 +57,20 @@ class SdtServers():
 
 # Classe da base de dados de um servidor primário
 class Database:
-    def __init__(self):
-        pass
 
-    @classmethod
+    def __init__(self):
+        self.soasp = {}
+        self.soaadmin = {}
+        self.soaserial = {}
+        self.soarefresh = {}
+        self.soaretry = {}
+        self.soaexpire = {}
+
+        self.ns = []
+        self.a = []
+        self.mx = []
+
+
     def parse_from_file(self,filename):
         fp = open(filename,"r")
         # Expressão que dá match com as entradas do tipo DEFAULT
@@ -78,9 +87,7 @@ class Database:
 
         exp_value = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)$')
 
-        self.ns = []
-        self.a = []
-        self.mx = []
+
         macros = []
         alias = []
         for line in fp:
@@ -154,7 +161,73 @@ class Database:
                         pass
         return self
 
-    @classmethod
+
+
+    def size(self):
+        total_entries = 0
+        total_entries += len(self.ns) + len(self.a) + len(self.mx) + 6
+
+        return total_entries
+
+    def add_entry(self,type,entry):
+        if type=="soasp":
+            self.soasp = entry
+        elif type=="soaadmin":
+            self.soaadmin = entry
+        elif type=="soaserial":
+            self.soaserial = entry
+        elif type=="soarefresh":
+            self.soarefresh = entry
+        elif type=="soaretry":
+            self.soaretry = entry
+        elif type=="soaexpire":
+            self.soaexpire = entry
+        elif type=="ns":
+            self.ns.append(entry)
+        elif type=="a":
+            self.a.append(entry)
+        elif type=="mx":
+            self.mx.append(entry)
+
+    # Metodo para criar lista com as entradas da db, o tipo tem quer adicionado a cada entrada
+    def to_list(self):
+        list = []
+
+        elem = self.soasp
+        elem["type"] = "soasp"
+        list.append(elem)
+        elem = self.soaadmin
+        elem["type"] = "soaadmin"
+        list.append(self.soaadmin)
+        elem = self.soaserial
+        elem["type"] = "soaserial"
+        list.append(self.soaserial)
+        elem = self.soarefresh
+        elem["type"] = "soarefresh"
+        list.append(self.soarefresh)
+        elem = self.soaretry
+        elem["type"] = "soaretry"
+        list.append(self.soaretry)
+        elem = self.soaexpire
+        elem["type"] = "soaexpire"
+        list.append(self.soaexpire)
+
+
+        for elem in self.ns:
+            elem["type"] = "ns"
+            list.append(elem)
+        for elem in self.mx:
+            elem["type"] = "mx"
+            list.append(elem)
+        for elem in self.a:
+            elem["type"] = "a"
+            list.append(elem)
+
+        return list
+
+
+
+
     def print(self):
         print("SOASP: " + str(self.soasp))
         print("SOAADMIN: " + str(self.soaadmin))
@@ -176,7 +249,6 @@ class Database:
             print(elem)
 
     # Lista das entradas que fazem match no NAME e TYPE OF VALUE na base de dados do servidor autoritativo
-    @classmethod
     def get_response_values(self,name,value_type):
         res = []
         type = value_type.lower()
@@ -188,7 +260,6 @@ class Database:
 
     # Lista das entradas que fazem match com o NAME e com o tipo de valor igual
     # a NS na base de dados do servidor autoritativo
-    @classmethod
     def get_auth_values(self,name):
         res = []
         for elem in self.ns:
@@ -199,7 +270,6 @@ class Database:
 
     # Lista das entradas do tipo A (incluídos na cache ou na base de dados do servidor autoritativo) e que fazem
     # match no parâmetro com todos os valores no campo RESPONSE VALUES e no campo AUTHORITIES VALUES
-    @classmethod
     def get_extra_values(self,response_values,extra_values):
         res = []
         for elem in self.a:
