@@ -20,13 +20,13 @@ TTL DEFAULT 86400
 @ MX mx1.conversation. TTL 10
 @ MX mx2.conversation. TTL 20
 
-ns1 A 10.0.2.10 TTL
-ns2 A 10.0.3.10 TTL
-ns3 A 10.0.4.10 TTL
-sp.genre. A 10.0.10.12 TTL
-mx1 A 10.0.2.11 TTL
-mx2 A 10.0.2.12 TTL
-www A 10.0.3.11 TTL 200
+ns1 A 10.0.14.10 TTL
+ns2 A 10.0.19.12 TTL
+ns3 A 10.0.18.10 TTL
+sp.icebreaker. A 10.0.24.10 TTL
+mx1 A 10.0.14.11 TTL
+mx2 A 10.0.19.13 TTL
+www A 10.0.19.11 TTL 200
 
 sp CNAME ns1 TTL
 ss1 CNAME ns2 TTL
