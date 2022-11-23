@@ -39,10 +39,39 @@ class DnsConcisoPacket:
 
         return string
 
+    def prettyStr(self):
+        string = "# Header\n"
+        string += "MESSAGE-ID = " + str(self.message_id) + ", FLAGS = " + self.flags + ", RESPONSE-CODE = " + str(self.response_code) + ",\n"
+        string += "N-VALUES = " + str(self.n_values) + ", N-AUTHORITIES = " + str(self.n_auth) + ", N-EXTRA-VALUES = " + str(self.n_auth) + ";\n"
+        string += "# Data: Query Info\n"
+        string += "QUERY-INFO.NAME = " + self.name + ", QUERY-INFO.TYPE = " + self.value_type + ";\n"
+        string += "# Data: List of Response, Authorities and Extra Values\n"
+        for elem in self.response_vals.split(","):
+            if elem=="":
+                string += "RESPONSE-VALUES = (Null);\n"
+            else:
+                string += "RESPONSE-VALUES = " + elem + ",\n"
+        string = string[:-2] + ";\n"
+        for elem in self.auth_vals.split(","):
+            if elem=="":
+                string += "AUTHORITIES-VALUES = (Null);\n"
+            else:
+                string += "AUTHORITIES-VALUES = " + elem +",\n"
+        string = string[:-2] + ";\n"
+        for elem in self.extra_vals.split(","):
+            if elem=="":
+                string += "EXTRA-VALUES = (Null);\n"
+            else:
+                string += "EXTRA-VALUES = " + elem +",\n"
+        string = string[:-2] + ";\n"
+
+        return string
+
     def fromStr(self,string):
         fields = string.split(";")
         header_fileds = fields[0].split(",")
         query_fileds = fields[1].split(",")
+
         # Header fileds
         self.message_id = int(header_fileds[0])
         self.flags = header_fileds[1]
@@ -59,7 +88,7 @@ class DnsConcisoPacket:
         for flag in flags:
             if flag=='Q': # If is query
                 is_query = True
-                
+
         if not is_query:
             # Data flieds
             self.response_vals = fields[2]
@@ -79,8 +108,9 @@ class DnsConcisoPacket:
         return self
 
     # Query response
-    def response(self,flags,response_values,auth_values,extra_values):
+    def response(self,flags,response_code,response_values,auth_values,extra_values):
         self.flags = flags
+        self.response_code = response_code
         self.n_values = len(response_values)
         self.n_auth = len(auth_values)
         self.extras = len(extra_values)
@@ -88,30 +118,30 @@ class DnsConcisoPacket:
         for elem in response_values:
             n_fields = len(elem.keys())
             if n_fields==3:
-                self.response_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+",\n"
+                self.response_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+","
             elif n_fields==4:
-                self.response_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+",\n"
+                self.response_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+","
             elif n_fields==5:
-                self.response_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+",\n"
-        self.response_vals = "\n" + self.response_vals[:-2]
+                self.response_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+","
+        self.response_vals = self.response_vals[:-1]
         for elem in auth_values:
             n_fields = len(elem.keys())
             if n_fields==3:
-                self.auth_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+", \n"
+                self.auth_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+","
             elif n_fields==4:
-                self.auth_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+", \n"
+                self.auth_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+","
             elif n_fields==5:
-                self.auth_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+", \n"
-        self.auth_vals =  "\n" + self.auth_vals[:-2]
+                self.auth_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+","
+        self.auth_vals =  self.auth_vals[:-1]
         for elem in extra_values:
             n_fields = len(elem.keys())
             if n_fields==3:
-                self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+",\n"
+                self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+","
             elif n_fields==4:
-                self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+",\n"
+                self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+","
             elif n_fields==5:
-                self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+", \n"
-        self.extra_vals = "\n" + self.extra_vals[:-2]
+                self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+","
+        self.extra_vals = self.extra_vals[:-1]
         pass
 
         return self
