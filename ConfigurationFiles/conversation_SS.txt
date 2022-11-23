@@ -1,0 +1,6 @@
+# Configuration file for secundary server on .conversation
+.conversation. SP 10.0.2.10
+.conversation. DD 127.0.0.1
+.conversation. LG /var/dns/conversation.log
+all LG /var/dns/all.log
+root ST /var/dns/rootservers.db

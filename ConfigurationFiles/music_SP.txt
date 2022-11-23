@@ -1,0 +1,8 @@
+# Configuration file for primary server on .music
+.music. DB /var/dns/music.db
+.music. SS 10.0.6.11
+.music. SS 10.0.5.10
+.music. DD 127.0.0.1
+.music. LG /var/dns/music.log
+all LG /var/dns/all.log
+root ST /var/dns/rootservers.log

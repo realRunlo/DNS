@@ -1,0 +1,8 @@
+# Configuration file for primary server on .genre.music
+.genre.music. DB /var/dns/genre_music.db
+.genre.music. SS 10.0.9.10
+.genre.music. SS 10.0.0.10
+.genre.music. DD 127.0.0.1
+.genre.music. LG /var/dns/genre_music.log
+all LG /var/dns/all.log
+root ST /var/dns/rootservers.log
