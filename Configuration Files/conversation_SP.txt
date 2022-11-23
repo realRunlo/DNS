@@ -1,8 +1,0 @@
-# Configuration file for primary server on .conversation
-.conversation. DB /var/dns/conversation.db
-.conversation. SS 10.0.3.10
-.conversation. SS 10.0.4.10
-.conversation. DD 127.0.0.1
-.conversation. LG /var/dns/conversation.log
-all LG /var/dns/all.log
-root ST /var/dns/rootservers.log

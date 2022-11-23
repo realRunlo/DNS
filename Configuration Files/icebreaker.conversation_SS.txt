@@ -1,7 +1,0 @@
-# Configuration file for secundary server on .icebreaker.conversation
-.icebreaker.conversation. SP 10.0.10.12
-.icebreaker.conversation. DD 127.0.0.1
-.conversation. DD 10.0.2.10
-.icebreaker.conversation LG /var/dns/icebreaker_conversation.log
-all LG /var/dns/all.log
-root ST /var/dns/rootservers.db
