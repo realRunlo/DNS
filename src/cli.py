@@ -1,13 +1,29 @@
 import socket
 from DnsPacket import *
+import sys
 import random
 # Static
-server_ip = 5555
-server_adress = "127.0.0.1"
+default_port = 5555
 bufferSize = 1024
 
+# ip name type
+# OU
+# ip:Por name type
+print("------------CLI----------------")
+args = sys.argv[1:]
 
-serverAddressPort   = (server_adress, server_ip)
+
+adress_port = args[0].split(':')
+
+if len(adress_port)==2:
+    serverAddressPort   = (adress_port[0], adress_port[1])
+else:
+    serverAddressPort   = (adress_port[0], default_port)
+
+name = args[1]
+type_of_value = args[2]
+
+
 
 # Create a UDP socket at client side
 UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
@@ -15,19 +31,19 @@ UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 id = random.randint(0,65535)
 
 packet = DnsConcisoPacket()
-packet.request(id,"Q","example.com.","MX")
+packet.request(id,"Q",name,type_of_value)
+
+
+print("Query enviada:")
+print(packet.prettyStr()) # prettyStr modo de apresentar no terminal
+
 
 msg = packet.str()
-pmsg = packet.prettyStr()
-print("Query enviada do cliente")
-print(pmsg)
-
-
 # Send to server using created UDP socket
 UDPClientSocket.sendto(msg.encode(),serverAddressPort)
 
 msgFromServer = UDPClientSocket.recvfrom(bufferSize)
 
-print("Resposta do SP")
+print("Resposta:")
 packet.fromStr(msgFromServer[0].decode())
 print(packet.prettyStr())

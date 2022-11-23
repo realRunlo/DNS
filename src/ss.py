@@ -99,8 +99,10 @@ def query_service():
     # Create a datagram socket
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
+    my_address = socket.gethostbyname(socket.gethostname())
+    print(my_address)
     # Bind to address and ip
-    UDPServerSocket.bind(("127.0.0.1", 5556))
+    UDPServerSocket.bind((my_address, 5556))
 
     while(True):
 

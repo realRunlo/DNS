@@ -45,11 +45,10 @@ def zone_transfer_handler(connection,adress,db):
 
 def query_handler(address,message,UDPServerSocket,db):
     recv_packet = DnsConcisoPacket()
-    print(message)
     recv_packet.fromStr(message.decode())
 
-    print(recv_packet.name)
-    print(recv_packet.value_type)
+    print("Query recebida:")
+    print(recv_packet.prettyStr())
 
     has_domain = db.has_domain(recv_packet.name)
     # Resposta com aquele nome de dominio e tipo na base de dados
@@ -91,8 +90,10 @@ def query_service():
     # Create a datagram socket
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
+    my_address = socket.gethostbyname(socket.gethostname())
+    print(my_address)
     # Bind to address and ip
-    UDPServerSocket.bind(("127.0.0.1", 5555))
+    UDPServerSocket.bind((my_address,5555))
 
 
     while(True):
