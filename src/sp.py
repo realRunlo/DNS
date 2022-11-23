@@ -50,24 +50,40 @@ def query_handler(address,message,UDPServerSocket,db):
 
     print(recv_packet.name)
     print(recv_packet.value_type)
+
+    has_domain = db.has_domain(recv_packet.name)
+    # Resposta com aquele nome de dominio e tipo na base de dados
     response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
+    # Resposta com servidores autoritativos
     auth_values = db.get_auth_values(recv_packet.name)
+    # Resposta com valores exra
     extra_values = db.get_extra_values(response_values,auth_values)
 
-    print("REPONSE")
-    for elem in response_values:
-        print(elem)
-    print("AUTH")
-    for elem in auth_values:
-        print(elem)
-    print("EXTRA")
-    for elem in extra_values:
-        print(elem)
+    # print("REPONSE")
+    # for elem in response_values:
+    #     print(elem)
+    # print("AUTH")
+    # for elem in auth_values:
+    #     print(elem)
+    # print("EXTRA")
+    # for elem in extra_values:
+    #     print(elem)
+
+    if has_domain and len(response_values) > 0:
+        #Response code 0
+        response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
+    elif has_domain:
+        #Response code 1
+        response_packet = recv_packet.response("A",1,response_values,auth_values,extra_values)
+    elif not has_domain:
+        #Response code 2
+        response_packet = recv_packet.response("A",2,response_values,auth_values,extra_values)
+    else:
+        #Response code 3
+        response_packet = recv_packet.response("A",3,response_values,auth_values,extra_values)
 
 
-    response_packet = recv_packet.response("A",response_values,auth_values,extra_values)
     msg = response_packet.str()
-
     UDPServerSocket.sendto(msg.encode(), address)
 
 def query_service():
@@ -115,17 +131,24 @@ def zone_transfer_sevice():
 if __name__ == '__main__':
 
     args = sys.argv[1:]
+    # configFile
     print("------------SP----------------")
     # Leitura do ficheiro de configuração
     configs = Configuration()
     configs.parse_from_file(args[0])
+
+
+    if len(configs.db) > 1:
+        # fazer uma lista de dicionarios dominio-db_correspondente
+        # este é o caso em que é um sp de um dominio de topo ou seja tem mais que uma base de dados
+        pass
+    else:
+        db = Database()
+        db.parse_from_file(configs.db[0]['filepath'])
+
     # Leitura do ficheiro com a lista dos servidores de topo
     sdts = SdtServers()
-    sdts.parse_from_file(args[1])
-    #Leitura com ficheiro de base de dados
-    db = Database()
-    db.parse_from_file(args[2])
-
+    sdts.parse_from_file(configs.st['filepath'])
 
 
     thread1 = Thread(target=zone_transfer_sevice)

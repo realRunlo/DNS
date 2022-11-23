@@ -71,7 +71,9 @@ class Database:
         self.mx = []
 
 
+
     def parse_from_file(self,filename):
+
         fp = open(filename,"r")
         # Expressão que dá match com as entradas do tipo DEFAULT
         exp_default = re.compile(r'(?P<macro>[^\s]+)\sDEFAULT\s(?P<valor>[^\s]+)')
@@ -159,6 +161,7 @@ class Database:
                     else:
                         # Fazer report de incoerências ou erros
                         pass
+
         return self
 
 
@@ -247,6 +250,13 @@ class Database:
         print("A")
         for elem in self.a:
             print(elem)
+
+    def has_domain(self,domain):
+        for elem in self.ns:
+            if elem['parameter']==domain:
+                return True
+
+        return False
 
     # Lista das entradas que fazem match no NAME e TYPE OF VALUE na base de dados do servidor autoritativo
     def get_response_values(self,name,value_type):

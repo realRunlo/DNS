@@ -10,11 +10,36 @@ from threading import Thread
 
 
 
-def query_handler(adress,message,UDPServerSocket):
+def query_handler(adress,message,UDPServerSocket,db):
+    recv_packet = DnsConcisoPacket()
+    print(message)
+    recv_packet.fromStr(message.decode())
+
+    print(recv_packet.name)
+    print(recv_packet.value_type)
+    response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
+    auth_values = db.get_auth_values(recv_packet.name)
+    extra_values = db.get_extra_values(response_values,auth_values)
+
+    print("REPONSE")
+    for elem in response_values:
+        print(elem)
+    print("AUTH")
+    for elem in auth_values:
+        print(elem)
+    print("EXTRA")
+    for elem in extra_values:
+        print(elem)
+
+
+    response_packet = recv_packet.response("A",response_values,auth_values,extra_values)
+    msg = response_packet.str()
+
+    UDPServerSocket.sendto(msg.encode(), address)
     pass
 
 
-def zone_transfer_handler(db):
+def zone_transfer_handler(db,domain):
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(('127.0.0.1', 6000))
@@ -85,7 +110,7 @@ def query_service():
 
         address = bytesAddressPair[1]
 
-        thread = Thread(target=query_handler,args=(address,message,UDPServerSocket))
+        thread = Thread(target=query_handler,args=(address,message,UDPServerSocket,db))
         thread.start()
 
 
@@ -93,7 +118,7 @@ def zone_transfer_sevice():
 
     while True:
 
-        thread3 = Thread(target=zone_transfer_handler,args=[db])
+        thread3 = Thread(target=zone_transfer_handler,args=(db,configs.sp[0]["dominio"]))
         thread3.start()
         thread3.join()
 
@@ -103,14 +128,16 @@ def zone_transfer_sevice():
 if __name__ == '__main__':
 
     args = sys.argv[1:]
+    # configFile
     print("------------SS----------------")
 
     # Leitura do ficheiro de configuração
     configs = Configuration()
-    #configs.parse_from_file(args[0])
+    configs.parse_from_file(args[0])
+
     # Leitura do ficheiro com a lista dos servidores de topo
-    sdts = SdtServers()
-    #sdts.parse_from_file(args[1])
+    #sdts = SdtServers()
+    #sdts.parse_from_file(configs.st['filepath'])
 
     db = Database()
 

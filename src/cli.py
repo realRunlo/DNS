@@ -18,8 +18,9 @@ packet = DnsConcisoPacket()
 packet.request(id,"Q","example.com.","MX")
 
 msg = packet.str()
+pmsg = packet.prettyStr()
 print("Query enviada do cliente")
-print(msg)
+print(pmsg)
 
 
 # Send to server using created UDP socket
@@ -28,4 +29,5 @@ UDPClientSocket.sendto(msg.encode(),serverAddressPort)
 msgFromServer = UDPClientSocket.recvfrom(bufferSize)
 
 print("Resposta do SP")
-print(msgFromServer[0].decode())
+packet.fromStr(msgFromServer[0].decode())
+print(packet.prettyStr())
