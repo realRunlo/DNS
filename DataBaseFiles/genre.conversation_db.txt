@@ -1,0 +1,31 @@
+# DNS database file for subdomain .genre
+
+@ DEFAULT conversation.
+TTL DEFAULT 86400
+
+@ SOASP ns1.genre.conversation. TTL
+@ SOAADMIN dns\.admin.genre.conversation. TTL
+@ SOASERIAL 0
+@ SOAREFRESH 14400 TTL
+@ SOARETRY 3600 TTL
+@ SOAEXPIRE 604800 TTL
+
+@ NS ns1.conversation. TTL
+@ NS ns2.conversation. TTL
+@ NS ns3.conversation. TTL
+
+@ MX mx1.conversation. TTL 10
+@ MX mx2.conversation. TTL 20
+
+ns1 A 10.0.10.12 TTL
+ns2 A 10.0.1.10 TTL
+ns3 A 10.0.1.12 TTL
+mx1 A 10.0.10.10 TTL
+mx2 A 10.0.10.11 TTL
+www A 10.0.1.13 TTL 200
+
+sp CNAME ns1 TTL
+ss1 CNAME ns2 TTL
+ss2 CNAME ns3 TTL
+mail1 CNAME mx1 TTL
+mail2 CNAME mx2 TTL
