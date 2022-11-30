@@ -1,7 +1,7 @@
 # Configuration file for secundary server on icebreaker.conversation
-icebreaker.conversation. SP 10.0.24.10
+icebreaker.conversation. SP 10.0.27.12
 icebreaker.conversation. DD 127.0.0.1
-conversation. DD 10.0.14.10
+conversation. DD 10.0.18.10
 icebreaker.conversation LG server/Logs/icebreaker_conversation.log
 all LG server/Logs/all.log
 root ST server/STFiles/ST.db
