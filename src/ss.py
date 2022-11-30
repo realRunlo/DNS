@@ -5,44 +5,43 @@ import json
 import re
 from parsers import *
 from threading import Thread
+from DnsPacket import *
 
-
-
-
-
-def query_handler(adress,message,UDPServerSocket,db):
+def query_handler(address,message,UDPServerSocket,db):
     recv_packet = DnsConcisoPacket()
     print(message)
     recv_packet.fromStr(message.decode())
 
     print(recv_packet.name)
     print(recv_packet.value_type)
+    has_domain = db.has_domain(recv_packet.name)
     response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
     auth_values = db.get_auth_values(recv_packet.name)
     extra_values = db.get_extra_values(response_values,auth_values)
 
-    print("REPONSE")
-    for elem in response_values:
-        print(elem)
-    print("AUTH")
-    for elem in auth_values:
-        print(elem)
-    print("EXTRA")
-    for elem in extra_values:
-        print(elem)
-
-
-    response_packet = recv_packet.response("A",response_values,auth_values,extra_values)
+    if has_domain and len(response_values) > 0:
+        #Response code 0
+        response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
+    elif has_domain:
+        #Response code 1
+        response_packet = recv_packet.response("A",1,response_values,auth_values,extra_values)
+    elif not has_domain:
+        #Response code 2
+        response_packet = recv_packet.response("A",2,response_values,auth_values,extra_values)
+    else:
+        #Response code 3
+        response_packet = recv_packet.response("A",3,response_values,auth_values,extra_values)
     msg = response_packet.str()
 
     UDPServerSocket.sendto(msg.encode(), address)
     pass
 
 
-def zone_transfer_handler(db,domain):
+def zone_transfer_handler(db,domain, sp_ip):
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(('127.0.0.1', 6000))
+    print(sp_ip)
+    s.connect((sp_ip, 6000))
 
     request_db_serial_msg = "serial"
     # Envia pedido para saber número de série da db do SP
@@ -95,14 +94,15 @@ def zone_transfer_handler(db,domain):
 
 
 def query_service():
+    time.sleep(3)
     bufferSize = 1024
     # Create a datagram socket
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
-    my_address = socket.gethostbyname(socket.gethostname())
+    my_address = db.a[1]["value"]
     print(my_address)
     # Bind to address and ip
-    UDPServerSocket.bind((my_address, 5556))
+    UDPServerSocket.bind((my_address, 5555))
 
     while(True):
 
@@ -119,8 +119,8 @@ def query_service():
 def zone_transfer_sevice():
 
     while True:
-
-        thread3 = Thread(target=zone_transfer_handler,args=(db,configs.sp[0]["dominio"]))
+        print(configs.sp[0]["ip_port"])
+        thread3 = Thread(target=zone_transfer_handler,args=(db,configs.sp[0]["dominio"],configs.sp[0]["ip_port"]))
         thread3.start()
         thread3.join()
 

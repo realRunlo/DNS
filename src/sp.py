@@ -3,6 +3,7 @@ from threading import Thread
 import sys
 from parsers import *
 from DnsPacket import *
+from requests import get
 import json
 
 def zone_transfer_handler(connection,adress,db):
@@ -16,7 +17,7 @@ def zone_transfer_handler(connection,adress,db):
 
         msg_decoded = msg.decode('utf-8')
         print(msg_decoded)
-
+        db.print()
         if msg_decoded=="serial":
             # Responde ao pedido do SS enviado o número de serie da db
             connection.sendall(db.soaserial['value'].encode('utf-8'))
@@ -58,16 +59,6 @@ def query_handler(address,message,UDPServerSocket,db):
     # Resposta com valores exra
     extra_values = db.get_extra_values(response_values,auth_values)
 
-    # print("REPONSE")
-    # for elem in response_values:
-    #     print(elem)
-    # print("AUTH")
-    # for elem in auth_values:
-    #     print(elem)
-    # print("EXTRA")
-    # for elem in extra_values:
-    #     print(elem)
-
     if has_domain and len(response_values) > 0:
         #Response code 0
         response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
@@ -90,7 +81,7 @@ def query_service():
     # Create a datagram socket
     UDPServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
 
-    my_address = socket.gethostbyname(socket.gethostname())
+    my_address = db.a[0]["value"]
     print(my_address)
     # Bind to address and ip
     UDPServerSocket.bind((my_address,5555))
@@ -108,7 +99,7 @@ def query_service():
         thread.start()
 
 def zone_transfer_sevice():
-    address = "127.0.0.1"
+    address = db.a[0]["value"]
     port = 6000
     serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # bind the socket to a public host, and a well-known port
