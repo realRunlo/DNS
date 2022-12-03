@@ -2,6 +2,6 @@
 icebreaker.conversation. SP 10.0.27.12
 icebreaker.conversation. DD 127.0.0.1
 conversation. DD 10.0.18.10
-icebreaker.conversation LG server/Logs/icebreaker_conversation.log
-all LG server/Logs/all.log
-root ST server/STFiles/ST.db
+icebreaker.conversation LG server/Logs/icebreaker.conversation_log.txt
+all LG server/Logs/all_log.txt
+root ST server/STFiles/ST.txt

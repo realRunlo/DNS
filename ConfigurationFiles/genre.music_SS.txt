@@ -1,7 +1,7 @@
-# Configuration file for secundary server on .genre.music
-.genre.music. SP 10.0.8.10
-.genre.music. DD 127.0.0.1
-.music. DD 10.0.7.10
-.genre.music. LG /var/dns/genre_music.log
-all LG /var/dns/all.log
-root ST /var/dns/rootservers.db
+# Configuration file for secundary server on genre.music.
+genre.music. SP 10.0.31.10
+genre.music. DD 127.0.0.1
+music. DD 10.0.26.10
+genre.music. LG server/Logs/genre.music_log.txt
+all LG server/Logs/all_log.txt
+root ST server/STFiles/ST.txt

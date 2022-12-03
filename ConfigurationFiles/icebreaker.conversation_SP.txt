@@ -4,6 +4,6 @@ icebreaker.conversation. SS 10.0.28.11
 icebreaker.conversation. SS 10.0.28.10
 icebreaker.conversation. DD 127.0.0.1
 conversation. DD 10.0.18.10
-icebreaker.conversation. LG server/Logs/icebreaker_conversation.txt
-all LG server/Logs/all.txt
+icebreaker.conversation. LG server/Logs/icebreaker.conversation_log.txt
+all LG server/Logs/all_log.txt
 root ST server/STFiles/ST.txt
