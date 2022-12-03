@@ -1,4 +1,4 @@
-# DNS database file for subdomain .icebreaker
+# DNS database file for subdomain icebreaker.conversation.
 
 @ DEFAULT icebreaker.conversation.
 TTL DEFAULT 86400
@@ -17,15 +17,15 @@ TTL DEFAULT 86400
 @ MX mx1.icebreaker.conversation. TTL 10
 @ MX mx2.icebreaker.conversation. TTL 20
 
-ns1 A 10.0.27.12 TTL
-ns2 A 10.0.28.11 TTL
-ns3 A 10.0.28.10 TTL
-mx1 A 10.0.27.11 TTL
-mx2 A 10.0.27.10 TTL
-www A 10.0.28.13 TTL 200
+ns1.icebreaker.conversation. A 10.0.27.12 TTL
+ns2.icebreaker.conversation. A 10.0.28.11 TTL
+ns3.icebreaker.conversation. A 10.0.28.10 TTL
+mx1.icebreaker.conversation. A 10.0.27.11 TTL
+mx2.icebreaker.conversation. A 10.0.27.10 TTL
+www.icebreaker.conversation. A 10.0.28.13 TTL 200
 
-sp CNAME ns1 TTL
-ss1 CNAME ns2 TTL
-ss2 CNAME ns3 TTL
-mail1 CNAME mx1 TTL
-mail2 CNAME mx2 TTL
+sp.icebreaker.conversation. CNAME ns1.icebreaker.conversation. TTL
+ss1.icebreaker.conversation. CNAME ns2.icebreaker.conversation. TTL
+ss2.icebreaker.conversation. CNAME ns3.icebreaker.conversation. TTL
+mail1.icebreaker.conversation. CNAME mx1.icebreaker.conversation. TTL
+mail2.icebreaker.conversation. CNAME mx2.icebreaker.conversation. TTL

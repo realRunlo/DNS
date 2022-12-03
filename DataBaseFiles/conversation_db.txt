@@ -1,12 +1,12 @@
-# DNS database file for domain .conversation
-# It also includes a pointer to the primary server of the genre.conversation. subdomain
+# DNS database file for domain conversation.
+# It also includes a pointer to the primary server of the icebreaker.conversation. subdomain
 
 @ DEFAULT conversation.
 TTL DEFAULT 86400
 
 @ SOASP ns1.conversation. TTL
 @ SOAADMIN dns\.admin.conversation. TTL
-@ SOASERIAL 0
+@ SOASERIAL 0 TTL
 @ SOAREFRESH 14400 TTL
 @ SOARETRY 3600 TTL
 @ SOAEXPIRE 604800 TTL
@@ -15,21 +15,21 @@ TTL DEFAULT 86400
 @ NS ns2.conversation. TTL
 @ NS ns3.conversation. TTL
 
-.genre.@ NS sp.genre.music.
+icebreaker.conversation. NS sp.icebreaker.conversation.
 
 @ MX mx1.conversation. TTL 10
 @ MX mx2.conversation. TTL 20
 
-ns1 A 10.0.14.10 TTL
-ns2 A 10.0.19.12 TTL
-ns3 A 10.0.18.10 TTL
-sp.icebreaker. A 10.0.24.10 TTL
-mx1 A 10.0.14.11 TTL
-mx2 A 10.0.19.13 TTL
-www A 10.0.19.11 TTL 200
+ns1.conversation. A 10.0.18.10 TTL
+ns2.conversation. A 10.0.19.10 TTL
+ns3.conversation. A 10.0.20.10 TTL
+sp.icebreaker.conversation. A 10.0.27.12 TTL
+mx1.conversation. A 10.0.18.11 TTL
+mx2.conversation. A 10.0.18.12 TTL
+www.conversation. A 10.0.19.11 TTL 200
 
-sp CNAME ns1 TTL
-ss1 CNAME ns2 TTL
-ss2 CNAME ns3 TTL
-mail1 CNAME mx1 TTL
-mail2 CNAME mx2 TTL
+sp.conversation. CNAME ns1.conversation. TTL
+ss1.conversation. CNAME ns2.conversation. TTL
+ss2.conversation. CNAME ns3.conversation. TTL
+mail1.conversation. CNAME mx1.conversation. TTL
+mail2.conversation. CNAME mx2.conversation. TTL

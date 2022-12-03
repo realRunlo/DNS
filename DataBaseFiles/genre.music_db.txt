@@ -1,0 +1,31 @@
+# DNS database file for subdomain genre.music.
+
+@ DEFAULT genre.music.
+TTL DEFAULT 86400
+
+@ SOASP ns1.genre.music. TTL
+@ SOAADMIN dns\.admin.genre.music. TTL
+@ SOASERIAL 0 TTL
+@ SOAREFRESH 14400 TTL
+@ SOARETRY 3600 TTL
+@ SOAEXPIRE 604800 TTL
+
+@ NS ns1.genre.music. TTL
+@ NS ns2.genre.music. TTL
+@ NS ns3.genre.music. TTL
+
+@ MX mx1.genre.music. TTL 10
+@ MX mx2.genre.music. TTL 20
+
+ns1.genre.music. A 10.0.31.10 TTL
+ns2.genre.music. A 10.0.29.12 TTL
+ns3.genre.music. A 10.0.30.10 TTL
+mx1.genre.music. A 10.0.31.12 TTL
+mx2.genre.music. A 10.0.31.11 TTL
+www.genre.music. A 10.0.29.11 TTL 200
+
+sp.genre.music. CNAME ns1.genre.music. TTL
+ss1.genre.music. CNAME ns2.genre.music. TTL
+ss2.genre.music. CNAME ns3.genre.music. TTL
+mail1.genre.music. CNAME mx1.genre.music. TTL
+mail2.genre.music. CNAME mx2.genre.music. TTL

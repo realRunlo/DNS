@@ -1,0 +1,35 @@
+# DNS database file for domain music.
+# It also includes a pointer to the primary server of the music.
+
+@ DEFAULT music.
+TTL DEFAULT 86400
+
+@ SOASP ns1.music. TTL
+@ SOAADMIN dns\.admin.music. TTL
+@ SOASERIAL 0 TTL
+@ SOAREFRESH 14400 TTL
+@ SOARETRY 3600 TTL
+@ SOAEXPIRE 604800 TTL
+
+@ NS ns1.music. TTL
+@ NS ns2.music. TTL
+@ NS ns3.music. TTL
+
+genre.music. NS sp.genre.music.
+
+@ MX mx1.music. TTL 10
+@ MX mx2.music. TTL 20
+
+ns1.music. A 10.0.26.10 TTL
+ns2.music. A 10.0.24.11 TTL
+ns3.music. A 10.0.25.10 TTL
+sp.genre.music. A 10.0.31.10 TTL
+mx1.music. A 10.0.26.11 TTL
+mx2.music. A 10.0.26.12 TTL
+www.music. A 10.0.24.10 TTL 200
+
+sp.music. CNAME ns1.music. TTL
+ss1.music. CNAME ns2.music. TTL
+ss2.music. CNAME ns3.music. TTL
+mail1.music. CNAME mx1.music. TTL
+mail2.music. CNAME mx2.music. TTL
