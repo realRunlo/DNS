@@ -7,7 +7,7 @@
 # 		pass
 #
 #
-#     def encode(self,message_id,flags,response_code,n_values,n_auth,n_extras,query_info,response_val,auth_vals,extra_vals):
+#     def encode(self,message_id,flags,response_code,n_response,n_auth,n_extra,query_info,response_val,auth_vals,extra_vals):
 #         # Codificar um DNS packet
 #         pass
 
@@ -19,9 +19,9 @@ class DnsConcisoPacket:
         self.message_id = 0
         self.flags = ""
         self.response_code = 0
-        self.n_values = 0
+        self.n_response = 0
         self.n_auth = 0
-        self.n_extras = 0
+        self.n_extra = 0
         # Query info fields
         self.name = ""
         self.value_type = ""
@@ -31,18 +31,18 @@ class DnsConcisoPacket:
         self.extra_vals =""
 
     def str(self):
-        string = str(self.message_id)+","+self.flags+","+str(self.response_code)+","+str(self.n_values)+","+str(self.n_auth)+","+str(self.n_extras)+";"+self.name+","+self.value_type+";"+self.response_vals+";"+self.auth_vals+";"+self.extra_vals+";"
+        string = str(self.message_id)+","+self.flags+","+str(self.response_code)+","+str(self.n_response)+","+str(self.n_auth)+","+str(self.n_extra)+";"+self.name+","+self.value_type+";"+self.response_vals+";"+self.auth_vals+";"+self.extra_vals+";"
         flags = self.flags.split('+')
         for flag in flags:
             if flag=='Q': # If is query
-                string = str(self.message_id)+","+self.flags+","+str(self.response_code)+","+str(self.n_values)+","+str(self.n_auth)+","+str(self.n_extras)+";"+self.name+","+self.value_type+";"
+                string = str(self.message_id)+","+self.flags+","+str(self.response_code)+","+str(self.n_response)+","+str(self.n_auth)+","+str(self.n_extra)+";"+self.name+","+self.value_type+";"
 
         return string
 
     def prettyStr(self):
         string = "# Header\n"
         string += "MESSAGE-ID = " + str(self.message_id) + ", FLAGS = " + self.flags + ", RESPONSE-CODE = " + str(self.response_code) + ",\n"
-        string += "N-VALUES = " + str(self.n_values) + ", N-AUTHORITIES = " + str(self.n_auth) + ", N-EXTRA-VALUES = " + str(self.n_auth) + ";\n"
+        string += "N-VALUES = " + str(self.n_response) + ", N-AUTHORITIES = " + str(self.n_auth) + ", N-EXTRA-VALUES = " + str(self.n_extra) + ";\n"
         string += "# Data: Query Info\n"
         string += "QUERY-INFO.NAME = " + self.name + ", QUERY-INFO.TYPE = " + self.value_type + ";\n"
         string += "# Data: List of Response, Authorities and Extra Values\n"
@@ -76,9 +76,9 @@ class DnsConcisoPacket:
         self.message_id = int(header_fileds[0])
         self.flags = header_fileds[1]
         self.response_code = int(header_fileds[2])
-        self.n_values = int(header_fileds[3])
+        self.n_response = int(header_fileds[3])
         self.n_auth = int(header_fileds[4])
-        self.n_extras = int(header_fileds[5])
+        self.n_extra = int(header_fileds[5])
         # Query info fields
         self.name = query_fileds[0]
         self.value_type = query_fileds[1]
@@ -95,9 +95,6 @@ class DnsConcisoPacket:
             self.auth_vals = fields[3]
             self.extra_vals = fields[4]
 
-
-
-
     # Query request
     def request(self,message_id,flags,name,value_type):
         self.message_id = message_id
@@ -111,9 +108,9 @@ class DnsConcisoPacket:
     def response(self,flags,response_code,response_values,auth_values,extra_values):
         self.flags = flags
         self.response_code = response_code
-        self.n_values = len(response_values)
+        self.n_response = len(response_values)
         self.n_auth = len(auth_values)
-        self.extras = len(extra_values)
+        self.n_extra = len(extra_values)
 
         for elem in response_values:
             n_fields = len(elem.keys())
@@ -142,6 +139,4 @@ class DnsConcisoPacket:
             elif n_fields==5:
                 self.extra_vals += elem['parameter'] +" "+elem['type']+" "+elem['value']+" "+elem["ttl"]+" "+elem['prio']+","
         self.extra_vals = self.extra_vals[:-1]
-        pass
-
         return self

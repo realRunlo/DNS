@@ -6,48 +6,17 @@ import re
 from parsers import *
 from threading import Thread
 from DnsPacket import *
+from logsys import *
 
-def query_handler(address,message,UDPServerSocket,db):
-    recv_packet = DnsConcisoPacket()
-    print(message)
-    recv_packet.fromStr(message.decode())
-
-    print(recv_packet.name)
-    print(recv_packet.value_type)
-    has_domain = db.has_domain(recv_packet.name)
-    response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
-    auth_values = db.get_auth_values(recv_packet.name)
-    extra_values = db.get_extra_values(response_values,auth_values)
-
-    if has_domain and len(response_values) > 0:
-        #Response code 0
-        response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
-    elif has_domain:
-        #Response code 1
-        response_packet = recv_packet.response("A",1,response_values,auth_values,extra_values)
-    elif not has_domain:
-        #Response code 2
-        response_packet = recv_packet.response("A",2,response_values,auth_values,extra_values)
-    else:
-        #Response code 3
-        response_packet = recv_packet.response("A",3,response_values,auth_values,extra_values)
-    msg = response_packet.str()
-
-    UDPServerSocket.sendto(msg.encode(), address)
-    pass
-
-
-def zone_transfer_handler(db,domain, sp_ip):
-
+def zone_transfer_handler(db,domain, sp_ip, log):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    print(sp_ip)
     s.connect((sp_ip, 6000))
 
     request_db_serial_msg = "serial"
     # Envia pedido para saber número de série da db do SP
     s.sendall(request_db_serial_msg.encode('utf-8'))
+    timeStart = datetime.datetime.now()
 
-    print("enviei")
     # Recebe número de série da db do SP
     db_serial = s.recv(1024)
 
@@ -73,25 +42,76 @@ def zone_transfer_handler(db,domain, sp_ip):
                 entry_number = int(fields[0])
                 entry = json.loads(fields[1])
 
-                type = entry['type']
-                del entry['type']
-
                 # Adciona entrada à base de dados
-                db.add_entry(type,entry)
+                db.add_entry(entry['type'],entry)
                 total_entries -= 1
 
+            # Regista Log
+            timeEnd = datetime.datetime.now()
+            log.logEntry(timeEnd, "ZT", ipLog(sp_ip, 6000), ztLogData("SS", timeStart, timeEnd))
 
-            db.print()
             # SS já tem a base de dados em memória, abandona coneção
             s.close()
             print("Transferência de zona terminada")
+            db.print()
 
 
     else:
         s.sendall("abandon".encode('utf-8'))
         s.close()
 
+def query_handler(address,message,UDPServerSocket,db, log):
+    # Receive Query
+    recv_packet = DnsConcisoPacket()
+    recv_packet.fromStr(message.decode())
 
+    # Log Query
+    time = datetime.datetime.now()
+    log.logEntry(time, "QR", ipLog(address[0], address[1]), message.decode())
+
+    # Process Query
+    domain = recv_packet.name
+    while (not db.has_domain(domain) and domain != "" and "." in domain):
+        domain = re.sub(r'^\w*\.', "", domain)
+
+    # Verifica se existe dominio
+    has_domain = db.has_domain(domain)
+    # Resposta com aquele nome de dominio e tipo na base de dados
+    response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
+    # Resposta com servidores autoritativos
+    auth_values = db.get_auth_values(domain)
+    # Resposta com valores exra
+    extra_values = db.get_extra_values(response_values, auth_values)
+
+    if has_domain and len(response_values) > 0:
+        # Response code 0: Nenhum erro, o sistema tem informação direta sobre a query
+        response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
+        # Guardar em Cache
+        pass
+    elif has_domain:
+        # Response code 1: O dominio existe mas não encontrou informação com o TYPE_OF_VALUE necessário
+        # Resultados vazio e auth e extra normais.
+        response_packet = recv_packet.response("A",1,response_values,auth_values,extra_values)
+        # Resposta Negativa e pode ser guardada em cache durante um "horizonte temporal curto"
+        pass
+    elif not has_domain:
+        # Response code 2: O dominio não existe mas inclui os auth de onde obteu informação
+        response_packet = recv_packet.response("A",2,response_values,auth_values,extra_values)
+        # Resposta Negativa e pode ser guardada em cache
+        pass
+    else:
+        #Response code 3: Mensagem DNS não descodificada corretamente
+        response_packet = recv_packet.response("A",3,response_values,auth_values,extra_values)
+        # Log Erro na descodificacao
+        time = datetime.datetime.now()
+        log.logEntry(time, "ER", ipLog(address[0], address[1]), "Especificar o Erro, e onde ocorreu")
+
+    msg = response_packet.str()
+    UDPServerSocket.sendto(msg.encode(), address)
+
+    # Log Resposta à query enviada
+    time = datetime.datetime.now()
+    log.logEntry(time, "RE", ipLog(address[0], address[1]), msg)
 
 def query_service():
     time.sleep(3)
@@ -101,26 +121,25 @@ def query_service():
 
     my_address = db.a[1]["value"]
     print(my_address)
+
     # Bind to address and ip
     UDPServerSocket.bind((my_address, 5555))
 
     while(True):
-
         bytesAddressPair = UDPServerSocket.recvfrom(bufferSize)
 
         message = bytesAddressPair[0]
 
         address = bytesAddressPair[1]
 
-        thread = Thread(target=query_handler,args=(address,message,UDPServerSocket,db))
+        thread = Thread(target=query_handler,args=(address,message,UDPServerSocket,db, log))
         thread.start()
-
 
 def zone_transfer_sevice():
 
     while True:
         print(configs.sp[0]["ip_port"])
-        thread3 = Thread(target=zone_transfer_handler,args=(db,configs.sp[0]["dominio"],configs.sp[0]["ip_port"]))
+        thread3 = Thread(target=zone_transfer_handler,args=(db,configs.sp[0]["dominio"],configs.sp[0]["ip_port"], log))
         thread3.start()
         thread3.join()
 
@@ -128,21 +147,22 @@ def zone_transfer_sevice():
 
 
 if __name__ == '__main__':
-
     args = sys.argv[1:]
-    # configFile
+
     print("------------SS----------------")
 
     # Leitura do ficheiro de configuração
     configs = Configuration()
     configs.parse_from_file(args[0])
 
+    # Inicializa o Log
+    log = Log(configs.lg[0]['filepath'], "shy")
+
     # Leitura do ficheiro com a lista dos servidores de topo
     #sdts = SdtServers()
     #sdts.parse_from_file(configs.st['filepath'])
 
     db = Database()
-
 
     thread1 = Thread(target=zone_transfer_sevice)
     thread2 = Thread(target=query_service)

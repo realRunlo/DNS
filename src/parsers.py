@@ -7,6 +7,7 @@ class Configuration:
         self.db = []
         self.sp = []
         self.ss = []
+        self.lg = []
 
     def parse_from_file(self,filename):
         fp = open(filename,"r")
@@ -26,7 +27,7 @@ class Configuration:
                 elif res.group("tipo")=="ST":
                     self.st = {"filepath" : res.group("associado")}
                 elif res.group("tipo")=="LG":
-                    self.lg = {"filepath" : res.group("associado")}
+                    self.lg.append({"filepath" : res.group("associado")})
                 else:
                     # Fazer report de incoerências ou erros
                     pass
@@ -50,8 +51,6 @@ class SdtServers():
             else:
                 # Fazer report de incoerências ou erros
                 pass
-
-
         return self
 
 
@@ -70,8 +69,6 @@ class Database:
         self.a = []
         self.mx = []
 
-
-
     def parse_from_file(self,filename):
 
         fp = open(filename,"r")
@@ -82,37 +79,33 @@ class Database:
         # Expressão que dá match com as entradas do tipo SOASP||SOAADMIN||SOASERIAL||SOAREFRESH||SOARETRY||SOAEXPIRE
         exp_soa = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>SOASP||SOAADMIN||SOASERIAL||SOAREFRESH||SOARETRY||SOAEXPIRE)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)')
 
-
         exp_priority = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)\s(?P<prioridade>[^\s]+)$')
 
         exp_ttl = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)$')
 
         exp_value = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)$')
 
-
         macros = []
         alias = []
         for line in fp:
             # Dá macth aos alias de definidos
+            # NOTA: Not sure o que isto faz
             res_default = exp_default.match(line)
             if res_default:
                 macros.append([res_default.group("macro"),res_default.group("valor")])
             else:
                 # Percorre os alias estabelecidos e faz a substituição, parte-se do princípio
                 # que os alias são definidos no inicio de ficheiro
+                # NOTA: Not sure o que isto faz
                 for macro in macros:
                     line = re.sub(macro[0],macro[1],line)
 
                 res_soa = exp_soa.match(line)
-                res_priority = exp_priority.match(line)
-                res_ttl = exp_ttl.match(line)
-                res_value = exp_value.match(line)
                 if res_soa:
                     if res_soa.group("tipo") == "SOASP":
                         # Valor indica o nome completo do SP do domínio (ou zona) indicado no parâmetro
                         self.soasp = {"parameter": res_soa.group("parametro"),"value" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
                     elif res_soa.group("tipo") == "SOAADMIN":
-
                         # Valor indica o endereço de e-mail completo do administrador do domínio (ou zona) indicado n parâmetro
                         self.soaadmin = {"parameter": res_soa.group("parametro"),"value" : re.sub("\\\.","@",res_soa.group("valor")),"ttl" : res_soa.group("tempo")}
                     elif res_soa.group("tipo") == "SOASERIAL":
@@ -127,8 +120,11 @@ class Database:
                     elif res_soa.group("tipo") == "SOAEXPIRE":
                         # Valor indica o intervalo temporal para um SS deixar de considerar a sua réplica da base de dados da zona indicada no parâmetro como válida
                         self.soaexpire = {"parameter": res_soa.group("parametro"),"value" : res_soa.group("valor"),"ttl" : res_soa.group("tempo")}
-                elif res_priority:
-                    entry = {"parameter": res_priority.group("parametro"),"value" : res_priority.group("valor"),"ttl" : res_priority.group("tempo"),"prio" :res_priority.group("prioridade") }
+                    continue
+
+                res_priority = exp_priority.match(line)
+                if res_priority:
+                    entry = {"parameter": res_priority.group("parametro"),"value" : res_priority.group("valor"),"ttl" : res_priority.group("tempo"),"prio" :res_priority.group("prioridade"), "type": res_priority.group("tipo")}
                     if res_priority.group("tipo") == "NS":
                         self.ns.append(entry)
                     elif res_priority.group("tipo") == "A":
@@ -138,9 +134,11 @@ class Database:
                     else:
                         # Fazer report de incoerências ou erros
                         pass
+                    continue
 
-                elif res_ttl:
-                    entry = {"parameter": res_ttl.group("parametro"),"value" : res_ttl.group("valor"),"ttl" : res_ttl.group("tempo")}
+                res_ttl = exp_ttl.match(line)
+                if res_ttl:
+                    entry = {"parameter": res_ttl.group("parametro"),"value" : res_ttl.group("valor"),"ttl" : res_ttl.group("tempo"), "type": res_ttl.group("tipo")}
                     if res_ttl.group("tipo") == "NS":
                         self.ns.append(entry)
                     elif res_ttl.group("tipo") == "A":
@@ -150,8 +148,9 @@ class Database:
                     else:
                         # Fazer report de incoerências ou erros
                         pass
-                elif res_value:
-                    entry = {"parameter": res_value.group("parametro"),"value" : res_value.group("valor")}
+                res_value = exp_value.match(line)
+                if res_value:
+                    entry = {"parameter": res_value.group("parametro"),"value" : res_value.group("valor"), "type": res_value.group("tipo")}
                     if res_value.group("tipo") == "NS":
                         self.ns.append(entry)
                     elif res_value.group("tipo") == "A":
@@ -161,15 +160,11 @@ class Database:
                     else:
                         # Fazer report de incoerências ou erros
                         pass
-
         return self
-
-
 
     def size(self):
         total_entries = 0
         total_entries += len(self.ns) + len(self.a) + len(self.mx) + 6
-
         return total_entries
 
     def add_entry(self,type,entry):
@@ -215,7 +210,6 @@ class Database:
         elem["type"] = "soaexpire"
         list.append(self.soaexpire)
 
-
         for elem in self.ns:
             elem["type"] = "ns"
             list.append(elem)
@@ -227,9 +221,6 @@ class Database:
             list.append(elem)
 
         return list
-
-
-
 
     def print(self):
         print("SOASP: " + str(self.soasp))
@@ -255,7 +246,6 @@ class Database:
         for elem in self.ns:
             if elem['parameter']==domain:
                 return True
-
         return False
 
     # Lista das entradas que fazem match no NAME e TYPE OF VALUE na base de dados do servidor autoritativo
@@ -264,7 +254,6 @@ class Database:
         type = value_type.lower()
         for elem in getattr(self,type):
             if(elem['parameter']==name):
-                elem['type'] = value_type
                 res.append(elem)
         return res
 
@@ -274,24 +263,23 @@ class Database:
         res = []
         for elem in self.ns:
             if(elem['parameter']==name):
-                elem['type'] = "NS"
                 res.append(elem)
         return res
 
     # Lista das entradas do tipo A (incluídos na cache ou na base de dados do servidor autoritativo) e que fazem
     # match no parâmetro com todos os valores no campo RESPONSE VALUES e no campo AUTHORITIES VALUES
-    def get_extra_values(self,response_values,extra_values):
-        res = []
-        for elem in self.a:
-            for rv in response_values:
-                # Compara o parametro com a primeira parte do endereço no value
-                if elem['parameter']==rv['value'].split(".")[0]:
-                    elem['type'] = "A"
-                    res.append(elem)
-
-            for ev in extra_values:
-                # Compara o parametro com a primeira parte do endereço no value
-                if elem['parameter']==ev['value'].split(".")[0]:
-                    elem['type'] = "A"
-                    res.append(elem)
-        return res
+    def get_extra_values(self, response, auth):
+        extra = []
+        for each in response:
+            for elem in self.a:
+                # NOTE: Queries do tipo A têm "each" do tipo diferente das queries do tipo MX
+                # value para MX e parameter para A
+                if (each['value']==elem['parameter'] or each['parameter']==elem['parameter']):
+                    extra.append(elem)
+                    break
+        for each in auth:
+            for elem in self.a:
+                if (each['value']==elem['parameter']):
+                    extra.append(elem)
+                    break
+        return extra
