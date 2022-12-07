@@ -8,11 +8,11 @@ from threading import Thread
 from DnsPacket import *
 from logsys import *
 
-def zone_transfer_handler(db,domain, sp_ip, log):
+def zone_transfer_handler(db,domain,sp_ip, log):
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((sp_ip, 6000))
 
-    request_db_serial_msg = "serial"
+    request_db_serial_msg = "getserial:"
     # Envia pedido para saber número de série da db do SP
     s.sendall(request_db_serial_msg.encode('utf-8'))
     timeStart = datetime.datetime.now()
@@ -24,40 +24,51 @@ def zone_transfer_handler(db,domain, sp_ip, log):
     # Se a versão for diferente da que está no SP ou o SS ainda não tiver a base de dados carregada
     if db.soaserial=={} or db_serial.decode('utf-8') != db.soaserial['value']:
         #  SS envia  o nome completo do domínio para a qual quer receber uma cópia da base de dados do SP
-        s.sendall("get".encode('utf-8'))
-        total_entries = s.recv(1024)
-        total_entries = int(total_entries.decode())
+        send_domain = "domain:"+domain
+        s.sendall(send_domain.encode('utf-8'))
 
-        if total_entries<=65535:
-            # SS aceita o número de entradas
-            s.sendall("ok".encode('utf-8'))
+        sp_response = s.recv(1024).decode('utf-8').split(":")
+        sp_response_type = sp_response[0]
+        sp_response_msg = sp_response[1]
 
-            last_entry = 0
-            while total_entries>0:
-                entrie_msg = s.recv(200)
-                entrie_msg = entrie_msg.decode('utf-8')
+        # Quando ss tem permissão
+        if sp_response_type == "entries":
+            total_entries = int(sp_response_msg)
 
-                fields = entrie_msg.split(";")
+            if total_entries<=65535:
+                # SS aceita o número de entradas
+                s.sendall("ok:".encode('utf-8'))
 
-                entry_number = int(fields[0])
-                entry = json.loads(fields[1])
+                last_entry = 0
+                while total_entries>0:
+                    entrie_msg = s.recv(200)
+                    entrie_msg = entrie_msg.decode('utf-8')
 
-                # Adciona entrada à base de dados
-                db.add_entry(entry['type'],entry)
-                total_entries -= 1
+                    fields = entrie_msg.split(";")
 
-            # Regista Log
-            timeEnd = datetime.datetime.now()
-            log.logEntry(timeEnd, "ZT", ipLog(sp_ip, 6000), ztLogData("SS", timeStart, timeEnd))
+                    entry_number = int(fields[0])
+                    entry = json.loads(fields[1])
 
-            # SS já tem a base de dados em memória, abandona coneção
-            s.close()
-            print("Transferência de zona terminada")
-            db.print()
+                    # Adciona entrada à base de dados
+                    db.add_entry(entry['type'],entry)
+                    total_entries -= 1
 
+                    # Regista Log
+                    timeEnd = datetime.datetime.now()
+                    log.logEntry(timeEnd, "ZT", ipLog(sp_ip, 6000), ztLogData("SS", timeStart, timeEnd))
+
+                    # SS já tem a base de dados em memória, abandona coneção
+                    s.close()
+                    print("Transferência de zona terminada")
+                    db.print()
+
+        # Quando ss não tem permissão
+        elif sp_response_type == "error":
+            print(sp_response_msg)
 
     else:
-        s.sendall("abandon".encode('utf-8'))
+        #Não precisa de atualiza a bd
+        s.sendall("abandon:".encode('utf-8'))
         s.close()
 
 def query_handler(address,message,UDPServerSocket,db, log):

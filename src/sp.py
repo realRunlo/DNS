@@ -9,39 +9,45 @@ import datetime
 from logsys import *
 import re
 
-def zone_transfer_handler(connection,address,db, log):
+def zone_transfer_handler(connection,address,db,configs,log):
     db_total_entries = 0
     while True:
         # Recebe ZT message
         msg = connection.recv(1024)
         timeStart = datetime.datetime.now()
-        msg_decoded = msg.decode('utf-8')
+        msg_decoded = msg.decode('utf-8').split(":")
+        msg_decoded_type = msg_decoded[0]
+        msg_decoded_data = msg_decoded[1]
 
-        if msg_decoded=="serial":
+        if msg_decoded_type=="serial":
             # Responde ao pedido do SS enviado o número de serie da db
             connection.sendall(db.soaserial['value'].encode('utf-8'))
-        elif msg_decoded=="get":
+        elif msg_decoded_type=="domain":
             # SP envia o núemro de entradas da sua bd
-            db_total_entries = db.size()
-            connection.sendall(str(db_total_entries).encode('utf-8'))
-        elif msg_decoded=="ok":
+            if configs.ss_has_auth(msg_decoded_data,address[0]):
+                db_total_entries = db.size()
+                entries_response = "entries:" + str(db_total_entries)
+                connection.sendall(entries_response.encode('utf-8'))
+            else:
+                # Mandar um permission denie ou algo do genero
+                connection.sendall("error:permission denied:".encode('utf-8'))
+        elif msg_decoded_type=="ok":
             # SP envia linha a linha a sua bd
             counter = 1
             db_list = db.to_list()
 
             # ASK: While com o for e counter? terminaria n vezes a connection caso o for nao faça direito?
-            while counter<=db_total_entries:
-                for entry in db_list:
-                    send_entry_msg = str(counter) + ";" + json.dumps(entry) + ";"
-                    # Adicionar padding
-                    send_entry_msg = send_entry_msg.ljust(200,"0")
-                    connection.sendall(send_entry_msg.encode('utf-8'))
-                    counter += 1
-                # Regista Log
-                timeEnd = datetime.datetime.now()
-                log.logEntry(timeEnd, "ZT", ipLog(address[0], address[1]), ztLogData("SP", timeStart, timeEnd))
-                # Depois de enviar todas as entradas da base de dados termina a conexão
-                connection.close()
+            for entry in db_list:
+                send_entry_msg = str(counter) + ";" + json.dumps(entry) + ";"
+                # Adicionar padding
+                send_entry_msg = send_entry_msg.ljust(200,"0")
+                connection.sendall(send_entry_msg.encode('utf-8'))
+                counter += 1
+            # Regista Log
+            timeEnd = datetime.datetime.now()
+            log.logEntry(timeEnd, "ZT", ipLog(address[0], address[1]), ztLogData("SP", timeStart, timeEnd))
+            # Depois de enviar todas as entradas da base de dados termina a conexão
+            connection.close()
             break
         elif msg_decoded=="abandon":
             connection.close()
@@ -137,7 +143,7 @@ def zone_transfer_sevice():
         (connection, address) = serversocket.accept()
         # now do something with the clientsocket
         # in this case, we'll pretend this is a threaded server
-        thread = Thread(target=zone_transfer_handler,args=(connection,address,db,log))
+        thread = Thread(target=zone_transfer_handler,args=(connection,address,db,configs,log))
         thread.start()
 
 if __name__ == '__main__':

@@ -33,6 +33,16 @@ class Configuration:
                     pass
         return self
 
+    def ss_has_auth(self,domain,ip):
+        for ss in self.ss:
+            ip_port = ss['ip_port'].split(":")
+            # No caso da porta tabem estar especificada tiramos só o ip
+            ss_ip = ip_port[0]
+            if ss['dominio'] == domain and ss_ip == ip:
+                return True
+
+        return False
+
 
 
 # Classe com a lista de servidores de topo
