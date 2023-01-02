@@ -4,6 +4,10 @@ node n1 {
     network-config {
 	hostname Router1
 	!
+	interface eth5
+	 ip address 10.0.14.1/24
+	 ipv6 address 2001:14::1/64
+	!
 	interface eth4
 	 ip address 10.0.21.1/24
 	 ipv6 address 2001:21::1/64
@@ -33,6 +37,7 @@ node n1 {
     interface-peer {eth2 n4}
     interface-peer {eth3 n15}
     interface-peer {eth4 n23}
+    interface-peer {eth5 n54}
 }
 
 node n2 {
@@ -580,8 +585,8 @@ node n24 {
 	!
     }
     canvas c1
-    iconcoords {861.0 46.0}
-    labelcoords {861.0 78.0}
+    iconcoords {899.0 43.0}
+    labelcoords {899.0 75.0}
     interface-peer {eth0 n2}
 }
 
@@ -1086,6 +1091,54 @@ node n53 {
     interface-peer {eth0 n45}
 }
 
+node n54 {
+    type hub
+    network-config {
+	hostname 0.10.in-addr
+	!
+    }
+    canvas c1
+    iconcoords {654.0 103.0}
+    labelcoords {654.0 127.0}
+    interface-peer {e0 n1}
+    interface-peer {e1 n55}
+    interface-peer {e2 n56}
+}
+
+node n55 {
+    type router
+    model host
+    network-config {
+	hostname Addr-SP
+	!
+	interface eth0
+	 ip address 10.0.14.10/24
+	 ipv6 address 2001:14::10/64
+	!
+    }
+    canvas c1
+    iconcoords {566.0 69.0}
+    labelcoords {566.0 101.0}
+    interface-peer {eth0 n54}
+}
+
+node n56 {
+    type router
+    model host
+    network-config {
+	hostname Addr-SS
+	!
+	interface eth0
+	 ip address 10.0.14.11/24
+	 ipv6 address 2001:14::11/64
+	!
+    }
+    canvas c1
+    iconcoords {746.0 49.0}
+    labelcoords {746.0 81.0}
+    interface-peer {eth0 n54}
+}
+
 link l1 {
     nodes {n1 n2}
     bandwidth 0
@@ -1391,6 +1444,21 @@ link l62 {
     bandwidth 0
 }
 
+link l15 {
+    nodes {n1 n54}
+    bandwidth 0
+}
+
+link l63 {
+    nodes {n54 n55}
+    bandwidth 0
+}
+
+link l64 {
+    nodes {n54 n56}
+    bandwidth 0
+}
+
 annotation a1 {
     iconcoords {3.0 3.0 529.0 376.0}
     type rectangle
@@ -1455,6 +1523,20 @@ annotation a5 {
     fontfamily {Arial}
     fontsize {12}
     color #C0C0FF
+    width 1
+    border black
+    rad 25
+    canvas c1
+}
+
+annotation a6 {
+    iconcoords {536.0 4.0 799.0 143.0}
+    type rectangle
+    label {.0.10.in-addr.}
+    labelcolor black
+    fontfamily {Arial}
+    fontsize {12}
+    color #ee1c6e
     width 1
     border black
     rad 25
