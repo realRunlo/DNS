@@ -86,7 +86,7 @@ class DnsConcisoPacket:
         is_query = False
         flags = header_fileds[1].split('+')
         for flag in flags:
-            if flag=='Q': # If is query
+            if 'Q' in flag: # If is query
                 is_query = True
 
         if not is_query:

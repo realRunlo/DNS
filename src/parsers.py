@@ -52,8 +52,7 @@ class SdtServers():
 
     def parse_from_file(self,filename):
         fp = open(filename,"r")
-        exp = re.compile(r'^(?P<ip>(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])):(?P<port>[0-9]+)$')
-
+        exp = re.compile(r'^(?P<ip>(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])):(?P<port>[0-9]+) ST$')
         for line in fp:
             res = exp.match(line)
             if res:
@@ -78,6 +77,7 @@ class Database:
         self.ns = []
         self.a = []
         self.mx = []
+        self.ptr = []
 
     def parse_from_file(self,filename):
 
@@ -91,7 +91,7 @@ class Database:
 
         exp_priority = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)\s(?P<prioridade>[^\s]+)$')
 
-        exp_ttl = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)$')
+        exp_ttl = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX||PTR)\s(?P<valor>[^\s]+)\s(?P<tempo>[^\s]+)$')
 
         exp_value = re.compile(r'(?P<parametro>[^\s]+)\s(?P<tipo>NS||A||CNAME||MX)\s(?P<valor>[^\s]+)$')
 
@@ -154,6 +154,9 @@ class Database:
                     elif res_ttl.group("tipo") == "A":
                         self.a.append(entry)
                     elif res_ttl.group("tipo") == "MX":
+                        self.mx.append(entry)
+                    elif res_ttl.group("tipo") == "PTR":
+                        entry = {"parameter": res_ttl.group("parametro"),"value" : res_ttl.group("valor"),"ttl" : res_ttl.group("tempo"), "type": "MX"}
                         self.mx.append(entry)
                     else:
                         # Fazer report de incoerências ou erros
@@ -263,7 +266,11 @@ class Database:
         res = []
         type = value_type.lower()
         for elem in getattr(self,type):
-            if(elem['parameter']==name):
+            if type == "mx" and name == ".":
+                res.append(elem)
+            elif type == "mx" and name in elem['parameter']:
+                res.append(elem)
+            elif(elem['parameter']==name):
                 res.append(elem)
         return res
 

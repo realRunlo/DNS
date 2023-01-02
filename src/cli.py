@@ -9,6 +9,7 @@ from logsys import *
 default_port = 5555
 bufferSize = 1024
 logFilePath = "server/Logs/all.txt"
+# shy | debug
 logMode = "debug"
 
 # ip name type
