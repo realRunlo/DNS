@@ -1,0 +1,26 @@
+# DNS database file for domain 0.10.in-addr.
+
+@ DEFAULT 0.10.in-addr.
+TTL DEFAULT 86400
+
+@ SOASP addr1.0.10.in-addr TTL
+@ SOAADMIN dns\.admin.0.10.in-addr. TTL
+@ SOASERIAL 0 TTL
+@ SOAREFRESH 14400 TTL
+@ SOARETRY 3600 TTL
+@ SOAEXPIRE 604800 TTL
+
+@ NS addr1.0.10.in-addr. TTL
+@ NS addr2.0.10.in-addr. TTL
+
+addr1.0.10.in-addr. A 10.0.14.10 TTL
+addr2.0.10.in-addr. A 10.0.14.11 TTL
+
+mx1.conversation. PTR 10.0.18.11 TTL
+mx2.conversation. PTR 10.0.18.12 TTL
+mx1.icebreaker.conversation. PTR 10.0.27.11 TTL
+mx2.icebreaker.conversation. PTR 10.0.27.10 TTL
+mx1.music. PTR 10.0.26.11 TTL
+mx2.music. PTR 10.0.26.12 TTL
+mx1.genre.music. PTR 10.0.31.12 TTL
+mx2.genre.music. PTR 10.0.31.11 TTL
