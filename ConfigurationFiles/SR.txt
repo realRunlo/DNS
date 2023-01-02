@@ -1,0 +1,4 @@
+# Configuration file for resolution server
+conversation. LG server/Logs/resolution_server_log.txt
+all LG server/Logs/all_log.txt
+root ST server/STFiles/ST.txt

@@ -1,0 +1,6 @@
+# Configuration file for secundary server on .
+conversation. SP 10.0.21.10
+conversation. DD 127.0.0.1
+conversation. LG server/Logs/_log.txt
+all LG server/Logs/all_log.txt
+root ST server/STFiles/ST.txt

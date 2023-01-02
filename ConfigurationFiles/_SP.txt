@@ -1,0 +1,7 @@
+# Configuration file for primary server on .
+conversation. DB server/DataBaseFiles/_db.txt
+conversation. SS 10.0.23.10
+conversation. DD 127.0.0.1
+conversation. LG server/Logs/_log.txt
+all LG server/Logs/all_log.txt
+root ST server/STFiles/ST.txt

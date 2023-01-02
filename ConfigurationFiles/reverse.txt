@@ -1,0 +1,4 @@
+# Configuration file for reverse server
+conversation. LG server/Logs/reverse_server_log.txt
+all LG server/Logs/all_log.txt
+root ST server/DataBaseFiles/reverse_db.txt
