@@ -4,60 +4,98 @@ import sys
 from parsers import *
 from DnsPacket import *
 from requests import get
+from cache import *
 import json
 import datetime
 from logsys import *
 import re
 
 # shy | debug
-logMode = "shy"
+logMode = "debug"
 # True | False
-recursive = True
+recursive = False
 
-def query_handler(address,message,UDPServerSocket, sdts, log):
+def query_handler(address,message,UDPServerSocket, sdts, cache, log):
     bufferSize = 1024
     recv_packet = DnsConcisoPacket()
+    recv_packet.fromStr(message.decode())
     # Log Query
     time = datetime.datetime.now()
     log.logEntry(time, "QR", ipLog(address[0], address[1]), message.decode())
 
-    # Check Cache
+    domain = recv_packet.name
 
-    if True:
-        pass
+    # Checking Cache
+    # Resposta com aquele nome de dominio e tipo na base de dados
+    response_values = cache.get_response_values(recv_packet.name,recv_packet.value_type)
+    # Resposta com servidores autoritativos
+    auth_values = cache.get_auth_values(domain)
+    # Resposta com valores exra
+    extra_values = cache.get_extra_values(response_values, auth_values)
 
-    # Create secondary socket
-    SecondServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-    SecondServerSocket.bind((my_address, 5554))
+    if len(response_values) > 0:
+        # Response code 0: Nenhum erro, o sistema tem informação direta sobre a query
+        response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
 
-    # If recursive mode is activated inster R into flag
-    if recursive:
-        message = message.decode()
-        index = message.find(',')
-        message = message[:index+2] + "R" + message[index+2:]
-        message = message.encode()
+        # Send response to client
+        msg = response_packet.str()
+        UDPServerSocket.sendto(msg.encode(), address)
+    else:
+        # Create secondary socket
+        SecondServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        SecondServerSocket.bind(('', 5554))
 
-    # Send to ST
-    SecondServerSocket.sendto(message, (sdts.table[0][0], 5555))
+        # If recursive mode is activated inster R into flag
+        if recursive:
+            message = message.decode()
+            index = message.find(',')
+            message = message[:index+2] + "R" + message[index+2:]
+            message = message.encode()
 
-    # Receive from ST
-    bytesAddressPair = SecondServerSocket.recvfrom(bufferSize)
-    recv_packet.fromStr(bytesAddressPair[0].decode())
+        # Send to ST
+        SecondServerSocket.sendto(message, (sdts.table[0][0], 5555))
 
-    if not recursive:
-        new_ip = recv_packet.extra_vals.split(" ")
+        # Log Query
+        time = datetime.datetime.now()
+        log.logEntry(time, "QE", ipLog(sdts.table[0][0], 5555), message.decode())
 
-        counter = 0
-        while(new_ip[0] != "" and counter < 2 and len(new_ip) < 5):
-            SecondServerSocket.sendto(message, (new_ip[2], 5555))
-            bytesAddressPair = SecondServerSocket.recvfrom(bufferSize)
+        # Receive from ST
+        bytesAddressPair = SecondServerSocket.recvfrom(bufferSize)
 
-            recv_packet.fromStr(bytesAddressPair[0].decode())
+        # Log Query
+        time = datetime.datetime.now()
+        log.logEntry(time, "QR", ipLog(sdts.table[0][0], 5555), message.decode())
+
+        recv_packet.fromStr(bytesAddressPair[0].decode())
+
+        if not recursive:
             new_ip = recv_packet.extra_vals.split(" ")
-            counter += 1
 
-    # Send response to client
-    UDPServerSocket.sendto(bytesAddressPair[0], address)
+            counter = 0
+            while(new_ip[0] != "" and counter < 2 and len(new_ip) < 5):
+                SecondServerSocket.sendto(message, (new_ip[2], 5555))
+                bytesAddressPair = SecondServerSocket.recvfrom(bufferSize)
+
+                # Log Query
+                time = datetime.datetime.now()
+                log.logEntry(time, "QE", ipLog(new_ip[2], 5555), message.decode())
+
+                recv_packet.fromStr(bytesAddressPair[0].decode())
+
+                # Log Query
+                time = datetime.datetime.now()
+                log.logEntry(time, "QR", ipLog(new_ip[2], 5555), message.decode())
+
+                new_ip = recv_packet.extra_vals.split(" ")
+                counter += 1
+        # Send response to client
+        UDPServerSocket.sendto(bytesAddressPair[0], address)
+
+        # Add to cache
+        if (recv_packet.response_code == 0):
+            cache.cache_packet(recv_packet)
+
+
 
     # Log Resposta à query enviada
     time = datetime.datetime.now()
@@ -80,7 +118,7 @@ def query_service():
 
         address = bytesAddressPair[1]
 
-        thread = Thread(target=query_handler,args=(address,message,UDPServerSocket, sdts, log))
+        thread = Thread(target=query_handler,args=(address,message,UDPServerSocket, sdts, cache, log))
         thread.start()
 
 
@@ -103,6 +141,8 @@ if __name__ == '__main__':
     # Leitura do ficheiro com a lista dos servidores de topo
     sdts = SdtServers()
     sdts.parse_from_file(configs.st['filepath'])
+
+    cache = Cache()
 
     # Log ST Read
     time = datetime.datetime.now()

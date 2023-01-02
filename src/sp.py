@@ -4,16 +4,16 @@ import sys
 from parsers import *
 from DnsPacket import *
 from requests import get
+from cache import *
 import json
 import datetime
 from logsys import *
 import re
 
 # shy | debug
-logMode = "shy"
+logMode = "debug"
 
 def zone_transfer_handler(connection,address,db,configs,log):
-    print("zt")
     db_total_entries = 0
     while True:
         # Recebe ZT message
@@ -22,7 +22,6 @@ def zone_transfer_handler(connection,address,db,configs,log):
         msg_decoded = msg.decode('utf-8').split(":")
         msg_decoded_type = msg_decoded[0]
         msg_decoded_data = msg_decoded[1]
-
         if msg_decoded_type=="serial":
             # Responde ao pedido do SS enviado o número de serie da db
             connection.sendall(db.soaserial['value'].encode('utf-8'))
@@ -47,6 +46,7 @@ def zone_transfer_handler(connection,address,db,configs,log):
                 send_entry_msg = send_entry_msg.ljust(200,"0")
                 connection.sendall(send_entry_msg.encode('utf-8'))
                 counter += 1
+
             # Regista Log
             timeEnd = datetime.datetime.now()
             log.logEntry(timeEnd, "ZT", ipLog(address[0], address[1]), ztLogData("SP", timeStart, timeEnd))
@@ -56,82 +56,104 @@ def zone_transfer_handler(connection,address,db,configs,log):
         elif msg_decoded=="abandon":
             connection.close()
             break
-    print("zt done")
 
-def query_handler(my_address,address,message,UDPServerSocket,db, log):
+def query_handler(my_address,address,message,UDPServerSocket,db, cache, log):
     msg = ""
     bufferSize =1024
     # Receive Query
     recv_packet = DnsConcisoPacket()
+    log_packet = DnsConcisoPacket()
     recv_packet.fromStr(message.decode())
 
     # Log Query
     time = datetime.datetime.now()
     log.logEntry(time, "QR", ipLog(address[0], address[1]), message.decode())
 
-
-    # Process Query
     domain = recv_packet.name
-    while (not db.has_domain(domain) and domain != "" and "." in domain):
-        domain = re.sub(r'^\w*\.', "", domain)
 
-    if domain == "" and db.has_domain("."):
-        domain = "."
-
-    # Verifica se existe dominio
-    has_domain = db.has_domain(domain)
+    # Checking Cache
     # Resposta com aquele nome de dominio e tipo na base de dados
-    response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
+    response_values = cache.get_response_values(recv_packet.name,recv_packet.value_type)
     # Resposta com servidores autoritativos
-    auth_values = db.get_auth_values(domain)
+    auth_values = cache.get_auth_values(domain)
     # Resposta com valores exra
-    extra_values = db.get_extra_values(response_values, auth_values)
+    extra_values = cache.get_extra_values(response_values, auth_values)
 
-    if len(extra_values) > 0:
-        new_ip = extra_values[0]['value']
-        flag = True
+    if len(response_values) > 0:
+        print("Estou na cache")
+        # Response code 0: Nenhum erro, o sistema tem informação direta sobre a query
+        response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
+
+        msg = response_packet.str()
+        UDPServerSocket.sendto(msg.encode(), address)
     else:
-        flag = False
+        # Process Query
+        while (not db.has_domain(domain) and domain != "" and "." in domain):
+            domain = re.sub(r'^\w*\.', "", domain)
 
-    # Final Response not obtained in this server
-    if 'R' in recv_packet.flags and flag and len(extra_values) < 2:
-        # Create secondary socket
-        SecondServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        SecondServerSocket.bind((my_address, 5554))
+        if domain == "" and db.has_domain("."):
+            domain = "."
 
-        # Send to next server
-        SecondServerSocket.sendto(message, (new_ip, 5555))
+        # Verifica se existe dominio
+        has_domain = db.has_domain(domain)
+        # Resposta com aquele nome de dominio e tipo na base de dados
+        response_values = db.get_response_values(recv_packet.name,recv_packet.value_type)
+        # Resposta com servidores autoritativos
+        auth_values = db.get_auth_values(domain)
+        # Resposta com valores exra
+        extra_values = db.get_extra_values(response_values, auth_values)
 
-        # Receive from server
-        bytesAddressPair = SecondServerSocket.recvfrom(bufferSize)
-
-        # Send response to client
-        msg = bytesAddressPair[0].decode()
-        UDPServerSocket.sendto(bytesAddressPair[0], address)
-
-    else:
-        if has_domain and len(response_values) > 0:
-            # Response code 0: Nenhum erro, o sistema tem informação direta sobre a query
-            response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
-            # Guardar em Cache
-            pass
-        elif has_domain:
-            # Response code 1: O dominio existe mas não encontrou informação com o TYPE_OF_VALUE necessário
-            # Resultados vazio e auth e extra normais.
-            response_packet = recv_packet.response("A",1,response_values,auth_values,extra_values)
-            # Resposta Negativa e pode ser guardada em cache durante um "horizonte temporal curto"
-            pass
-        elif not has_domain:
-            # Response code 2: O dominio não existe mas inclui os auth de onde obteu informação
-            response_packet = recv_packet.response("A",2,response_values,auth_values,extra_values)
-            # Resposta Negativa e pode ser guardada em cache
-            pass
+        if len(extra_values) > 0:
+            new_ip = extra_values[0]['value']
+            flag = True
         else:
-            #Response code 3: Mensagem DNS não descodificada corretamente
-            response_packet = recv_packet.response("A",3,response_values,auth_values,extra_values)
-            # Log Erro na descodificacao
+            flag = False
+
+        # Final Response not obtained in this server
+        if 'R' in recv_packet.flags and flag and len(extra_values) < 2:
+            # Create secondary socket
+            SecondServerSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+            SecondServerSocket.bind((my_address, 5554))
+
+            # Send to next server
+            SecondServerSocket.sendto(message, (new_ip, 5555))
+            # Log Query
             time = datetime.datetime.now()
-            log.logEntry(time, "ER", ipLog(address[0], address[1]), "Especificar o Erro, e onde ocorreu")
+            log.logEntry(time, "QE", ipLog(new_ip, 5555), message.decode())
+
+            # Receive from server
+            bytesAddressPair = SecondServerSocket.recvfrom(bufferSize)
+            # Log Query
+            time = datetime.datetime.now()
+            log.logEntry(time, "QR", ipLog(new_ip, 5555), bytesAddressPair[0].decode())
+
+            # Send response to client
+            msg = bytesAddressPair[0].decode()
+            UDPServerSocket.sendto(bytesAddressPair[0], address)
+
+        else:
+            if has_domain and len(response_values) > 0:
+                # Response code 0: Nenhum erro, o sistema tem informação direta sobre a query
+                response_packet = recv_packet.response("A",0,response_values,auth_values,extra_values)
+                cache.cache_packet(response_packet)
+                pass
+            elif has_domain:
+                # Response code 1: O dominio existe mas não encontrou informação com o TYPE_OF_VALUE necessário
+                # Resultados vazio e auth e extra normais.
+                response_packet = recv_packet.response("A",1,response_values,auth_values,extra_values)
+                # Resposta Negativa e pode ser guardada em cache durante um "horizonte temporal curto"
+                pass
+            elif not has_domain:
+                # Response code 2: O dominio não existe mas inclui os auth de onde obteu informação
+                response_packet = recv_packet.response("A",2,response_values,auth_values,extra_values)
+                # Resposta Negativa e pode ser guardada em cache
+                pass
+            else:
+                #Response code 3: Mensagem DNS não descodificada corretamente
+                response_packet = recv_packet.response("A",3,response_values,auth_values,extra_values)
+                # Log Erro na descodificacao
+                time = datetime.datetime.now()
+                log.logEntry(time, "ER", ipLog(address[0], address[1]), "Especificar o Erro, e onde ocorreu")
 
         msg = response_packet.str()
         UDPServerSocket.sendto(msg.encode(), address)
@@ -160,7 +182,7 @@ def query_service():
 
         address = bytesAddressPair[1]
 
-        thread = Thread(target=query_handler,args=(my_address, address,message,UDPServerSocket,db, log))
+        thread = Thread(target=query_handler,args=(my_address, address,message,UDPServerSocket,db, cache, log))
         thread.start()
 
 def zone_transfer_sevice():
@@ -207,6 +229,9 @@ if __name__ == '__main__':
     # Leitura do ficheiro com a lista dos servidores de topo
     sdts = SdtServers()
     sdts.parse_from_file(configs.st['filepath'])
+
+    # Inicializa cache
+    cache = Cache()
     # Log ST Read
     time = datetime.datetime.now()
     log.logEntry(time, "EV", "127.0.0.1", evLogData("st-file-read", configs.st['filepath']))
