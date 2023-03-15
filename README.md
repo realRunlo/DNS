@@ -1,6 +1,6 @@
 [under maintenance]
 # Domain Name System - DNS
-This project is a simple and fairly accurate implementation of a dns implementation. This project was devloped in python and tested using core network emulator.
+This project is a simple and fairly accurate implementation of a domain name system. This project was devloped in python and tested using core network emulator.
 
 ## System components
 
